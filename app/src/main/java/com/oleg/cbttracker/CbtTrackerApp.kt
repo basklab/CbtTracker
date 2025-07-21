@@ -1,38 +1,64 @@
+
 package com.oleg.cbttracker
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import com.oleg.cbttracker.components.AddThoughtDialog
-import com.oleg.cbttracker.components.ThoughtListUI
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.oleg.cbttracker.ui.screens.ThoughtEditScreen
+import com.oleg.cbttracker.ui.screens.ThoughtListScreen
+import com.oleg.cbttracker.viewmodel.EditViewModel
+import com.oleg.cbttracker.viewmodel.ListViewModel
+import java.util.UUID
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CbtTrackerApp() {
-    val entries = remember { mutableStateListOf<ThoughtEntry>() }
-    var showDialog by remember { mutableStateOf(false) }
+fun CbtTrackerApp(repo: ThoughtRepository) {
+    val navController = rememberNavController()
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add thought")
-            }
+    NavHost(navController = navController, startDestination = Destinations.LIST) {
+
+        composable(Destinations.LIST) {
+            val vm: ListViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    @Suppress("UNCHECKED_CAST")
+                    return ListViewModel(repo) as T
+                }
+            })
+            val entries by vm.entries.collectAsState()
+            ThoughtListScreen(
+                entries = entries,
+                onAdd = { navController.navigate("edit/new") },
+                onSelect = { id -> navController.navigate("edit/$id") }
+            )
         }
-    ) { inner ->
-        ThoughtListUI(
-            entries = entries,
-            onAdd = { text ->
-                entries.add(ThoughtEntry(thought = text))
-                showDialog = false
-            },
-            showDialog = showDialog,
-            setShowDialog = { showDialog = it },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(inner)
-        )
+
+        composable(
+            route = Destinations.ROUTE_EDIT,
+            arguments = listOf(navArgument(Destinations.ARG_ID) { type = NavType.StringType })
+        ) { backStackEntry ->
+            val arg = backStackEntry.arguments?.getString(Destinations.ARG_ID) ?: "new"
+            val uuid = arg.takeIf { it != "new" }?.let(UUID::fromString)
+            val vm: EditViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    @Suppress("UNCHECKED_CAST")
+                    return EditViewModel(repo, uuid) as T
+                }
+            })
+            ThoughtEditScreen(
+                text = vm.text,
+                onTextChange = vm::onTextChange,
+                onSave = { vm.save { navController.popBackStack() } },
+                onDelete = { vm.delete { navController.popBackStack() } },
+                isNew = uuid == null
+            )
+        }
     }
 }
+
