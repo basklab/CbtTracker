@@ -24,19 +24,15 @@ fun CbtTrackerApp() {
     ) { inner ->
         ThoughtListUI(
             entries = entries,
+            onAdd = { text ->
+                entries.add(ThoughtEntry(thought = text))
+                showDialog = false
+            },
+            showDialog = showDialog,
+            setShowDialog = { showDialog = it },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(inner)
         )
-
-        if (showDialog) {
-            AddThoughtDialog(
-                onAdd = { text ->
-                    entries.add(ThoughtEntry(thought = text))
-                    showDialog = false
-                },
-                onDismiss = { showDialog = false }
-            )
-        }
     }
 }
