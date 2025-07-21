@@ -19,7 +19,6 @@ fun AddThoughtDialog(
     onDismiss: () -> Unit
 ) {
     var state by remember { mutableStateOf(TextFieldValue()) }
-
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
