@@ -1,12 +1,9 @@
-
 package com.oleg.cbttracker
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -19,18 +16,13 @@ import com.oleg.cbttracker.viewmodel.ListViewModel
 import java.util.UUID
 
 @Composable
-fun CbtTrackerApp(repo: ThoughtRepository) {
+fun CbtTrackerApp() {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = Destinations.LIST) {
 
         composable(Destinations.LIST) {
-            val vm: ListViewModel = viewModel(factory = object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    @Suppress("UNCHECKED_CAST")
-                    return ListViewModel(repo) as T
-                }
-            })
+            val vm: ListViewModel = hiltViewModel()
             val entries by vm.entries.collectAsState()
             ThoughtListScreen(
                 entries = entries,
@@ -45,12 +37,7 @@ fun CbtTrackerApp(repo: ThoughtRepository) {
         ) { backStackEntry ->
             val arg = backStackEntry.arguments?.getString(Destinations.ARG_ID) ?: "new"
             val uuid = arg.takeIf { it != "new" }?.let(UUID::fromString)
-            val vm: EditViewModel = viewModel(factory = object : ViewModelProvider.Factory {
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    @Suppress("UNCHECKED_CAST")
-                    return EditViewModel(repo, uuid) as T
-                }
-            })
+            val vm: EditViewModel = hiltViewModel()
             ThoughtEditScreen(
                 text = vm.text,
                 onTextChange = vm::onTextChange,
@@ -61,4 +48,3 @@ fun CbtTrackerApp(repo: ThoughtRepository) {
         }
     }
 }
-
